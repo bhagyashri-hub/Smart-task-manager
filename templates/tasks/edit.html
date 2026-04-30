@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}Edit Task – TaskFlow{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h3 class="page-title"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Task</h3>
+    <p class="text-muted mb-0">{{ task.title }}</p>
+  </div>
+  <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('tasks.edit_task', task_id=task.id) }}" novalidate>
+
+          {% if current_user.is_admin() %}
+          <!-- Admin: full edit access -->
+
+          <!-- Title -->
+          <div class="mb-3">
+            <label for="title" class="form-label fw-semibold">
+              Task Title <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control" id="title" name="title"
+                   value="{{ task.title }}" required>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label for="description" class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="description" name="description"
+                      rows="3">{{ task.description or '' }}</textarea>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <!-- Project -->
+            <div class="col-md-6">
+              <label for="project_id" class="form-label fw-semibold">Project</label>
+              <select class="form-select" id="project_id" name="project_id">
+                {% for project in projects %}
+                <option value="{{ project.id }}" {% if project.id == task.project_id %}selected{% endif %}>
+                  {{ project.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Assigned To -->
+            <div class="col-md-6">
+              <label for="assigned_to" class="form-label fw-semibold">Assign To</label>
+              <select class="form-select" id="assigned_to" name="assigned_to">
+                <option value="">Unassigned</option>
+                {% for member in members %}
+                <option value="{{ member.id }}"
+                        {% if member.id == task.assigned_to %}selected{% endif %}>
+                  {{ member.username }} ({{ member.role.title() }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <!-- Priority -->
+            <div class="col-md-4">
+              <label for="priority" class="form-label fw-semibold">Priority</label>
+              <select class="form-select" id="priority" name="priority">
+                <option value="low" {% if task.priority == 'low' %}selected{% endif %}>🟢 Low</option>
+                <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>🟡 Medium</option>
+                <option value="high" {% if task.priority == 'high' %}selected{% endif %}>🔴 High</option>
+              </select>
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-4">
+              <label for="status" class="form-label fw-semibold">Status</label>
+              <select class="form-select" id="status" name="status">
+                <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
+                <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>✅ Completed</option>
+              </select>
+            </div>
+
+            <!-- Deadline -->
+            <div class="col-md-4">
+              <label for="deadline" class="form-label fw-semibold">Deadline</label>
+              <input type="date" class="form-control" id="deadline" name="deadline"
+                     value="{{ task.deadline.isoformat() if task.deadline else '' }}">
+            </div>
+          </div>
+
+          {% else %}
+          <!-- Member: only status update -->
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            As a <strong>Member</strong>, you can only update the status of this task.
+          </div>
+
+          <div class="mb-4 p-3 bg-light rounded">
+            <p class="mb-1"><strong>Title:</strong> {{ task.title }}</p>
+            {% if task.description %}
+            <p class="mb-1"><strong>Description:</strong> {{ task.description }}</p>
+            {% endif %}
+            <p class="mb-1"><strong>Project:</strong> {{ task.project.name }}</p>
+            <p class="mb-1"><strong>Priority:</strong> {{ task.priority.title() }}</p>
+            {% if task.deadline %}
+            <p class="mb-0"><strong>Deadline:</strong> {{ task.deadline.strftime('%b %d, %Y') }}</p>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <label for="status" class="form-label fw-semibold">Update Status</label>
+            <select class="form-select" id="status" name="status">
+              <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
+              <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>✅ Completed</option>
+            </select>
+          </div>
+          {% endif %}
+
+          <hr class="my-4">
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-save me-2"></i>Save Changes
+            </button>
+            <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-outline-secondary">Cancel</a>
+
+            {% if current_user.is_admin() %}
+            <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
+                  class="ms-auto" onsubmit="return confirm('Delete this task?')">
+              <button class="btn btn-outline-danger">
+                <i class="bi bi-trash me-1"></i>Delete Task
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

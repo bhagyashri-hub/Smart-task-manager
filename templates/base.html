@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Smart Task Manager{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+<div class="wrapper">
+  <nav id="sidebar">
+    <div class="sidebar-brand">
+      <i class="bi bi-kanban-fill me-2"></i>
+      <span>TaskFlow</span>
+    </div>
+    <div class="sidebar-user">
+      <div class="avatar {% if current_user.is_admin() %}avatar-admin{% endif %}">{{ current_user.username[0].upper() }}</div>
+      <div>
+        <div class="fw-semibold text-white" style="font-size:.9rem">{{ current_user.username }}</div>
+        <div class="mt-1">
+          <span class="badge {% if current_user.is_admin() %}bg-danger{% else %}bg-secondary{% endif %}">{{ current_user.role.title() }}</span>
+        </div>
+      </div>
+    </div>
+    <hr class="sidebar-divider">
+    <ul class="sidebar-nav">
+      <li><a href="{{ url_for('dashboard.index') }}" class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}"><i class="bi bi-speedometer2"></i><span> Dashboard</span></a></li>
+      <li><a href="{{ url_for('projects.list_projects') }}" class="{% if request.endpoint and 'projects' in request.endpoint %}active{% endif %}"><i class="bi bi-folder2-open"></i><span> Projects</span></a></li>
+      <li><a href="{{ url_for('tasks.list_tasks') }}" class="{% if request.endpoint and 'tasks' in request.endpoint %}active{% endif %}"><i class="bi bi-check2-square"></i><span> Tasks</span></a></li>
+      {% if current_user.is_admin() %}
+      <li><a href="{{ url_for('users.list_users') }}" class="{% if request.endpoint and 'users' in request.endpoint %}active{% endif %}"><i class="bi bi-people-fill"></i><span> Users</span></a></li>
+      {% endif %}
+    </ul>
+    {% if current_user.is_admin() %}
+    <hr class="sidebar-divider">
+    <div class="sidebar-section-title">Quick Actions</div>
+    <ul class="sidebar-nav">
+      <li><a href="{{ url_for('projects.create_project') }}"><i class="bi bi-plus-circle"></i><span> New Project</span></a></li>
+      <li><a href="{{ url_for('tasks.create_task') }}"><i class="bi bi-plus-square"></i><span> New Task</span></a></li>
+    </ul>
+    {% endif %}
+    <hr class="sidebar-divider">
+    <div class="sidebar-section-title">Developer</div>
+    <ul class="sidebar-nav">
+      <li><a href="/api/stats" target="_blank"><i class="bi bi-code-slash"></i><span> REST API</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm w-100">
+        <i class="bi bi-box-arrow-left me-1"></i><span>Logout</span>
+      </a>
+    </div>
+  </nav>
+  <div id="content">
+    <div class="top-bar">
+      <button id="sidebarToggle" class="btn btn-link text-dark p-0"><i class="bi bi-list fs-4"></i></button>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <a href="/api/stats" target="_blank" class="btn btn-sm btn-outline-secondary d-none d-md-flex"><i class="bi bi-code-slash me-1"></i>API</a>
+        <span class="fw-semibold text-dark">{{ current_user.username }}</span>
+      </div>
+    </div>
+    <div class="px-4 pt-3">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+    <div class="main-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const toggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  const content = document.getElementById('content');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      content.classList.toggle('expanded');
+    });
+  }
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

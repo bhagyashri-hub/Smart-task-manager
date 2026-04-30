@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }} – TaskFlow{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h3 class="page-title">
+      <i class="bi bi-folder2-open me-2 text-primary"></i>{{ project.name }}
+    </h3>
+    {% if project.description %}
+    <p class="text-muted mb-0">{{ project.description }}</p>
+    {% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Projects
+    </a>
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('tasks.create_task') }}" class="btn btn-primary">
+      <i class="bi bi-plus-square me-1"></i>Add Task
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Project Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card stat-card-primary p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon small"><i class="bi bi-list-task"></i></div>
+        <div>
+          <div class="stat-number">{{ project.total_tasks }}</div>
+          <div class="stat-label">Total Tasks</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-card-success p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon small"><i class="bi bi-check-circle-fill"></i></div>
+        <div>
+          <div class="stat-number">{{ project.completed_tasks }}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-card-warning p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon small"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+          <div class="stat-number">{{ project.pending_tasks }}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="fw-semibold">Overall Progress</span>
+      <span class="fw-bold text-primary">{{ project.progress_percent }}%</span>
+    </div>
+    <div class="progress" style="height: 12px; border-radius: 6px;">
+      <div class="progress-bar bg-success" style="width: {{ project.progress_percent }}%; border-radius: 6px;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tasks Table -->
+<div class="card">
+  <div class="card-header">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-check2-square me-2 text-primary"></i>Tasks in this Project</h6>
+  </div>
+  <div class="card-body p-0">
+    {% if tasks %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Task</th>
+            {% if current_user.is_admin() %}<th>Assigned To</th>{% endif %}
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Deadline</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+          <tr class="{% if task.is_overdue %}table-danger{% endif %}">
+            <td>
+              <div class="fw-semibold">{{ task.title }}</div>
+              {% if task.description %}
+              <small class="text-muted">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</small>
+              {% endif %}
+            </td>
+            {% if current_user.is_admin() %}
+            <td>
+              {% if task.assignee %}
+                <span class="avatar-xs">{{ task.assignee.username[0].upper() }}</span>
+                {{ task.assignee.username }}
+              {% else %}
+                <span class="text-muted fst-italic">Unassigned</span>
+              {% endif %}
+            </td>
+            {% endif %}
+            <td>
+              <span class="badge bg-{{ task.priority_badge }}-subtle text-{{ task.priority_badge }}">
+                {{ task.priority.title() }}
+              </span>
+            </td>
+            <td>
+              <span class="badge bg-{{ task.status_badge }}-subtle text-{{ task.status_badge }}">
+                {{ task.status.title() }}
+              </span>
+            </td>
+            <td>
+              {% if task.deadline %}
+                <span class="{% if task.is_overdue %}text-danger fw-semibold{% endif %}">
+                  {% if task.is_overdue %}<i class="bi bi-exclamation-triangle-fill me-1"></i>{% endif %}
+                  {{ task.deadline.strftime('%b %d, %Y') }}
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('tasks.toggle_status', task_id=task.id) }}" class="d-inline">
+                <button class="btn btn-sm {% if task.status == 'completed' %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                  <i class="bi bi-{% if task.status == 'completed' %}arrow-counterclockwise{% else %}check-lg{% endif %}"></i>
+                </button>
+              </form>
+              <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary ms-1">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% if current_user.is_admin() %}
+              <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}" class="d-inline ms-1"
+                    onsubmit="return confirm('Delete this task?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-clipboard-x"></i>
+      <p>No tasks in this project yet.</p>
+      {% if current_user.is_admin() %}
+      <a href="{{ url_for('tasks.create_task') }}" class="btn btn-primary">Add First Task</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
